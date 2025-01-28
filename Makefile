@@ -82,3 +82,6 @@ new-tag:
 	git push --tags &&\
 	echo "Pushed tag v$$VERSION" ||\
 	echo "Failed to push tag v$$VERSION"
+
+package:
+	poetry build && poetry publish
