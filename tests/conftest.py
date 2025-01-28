@@ -16,5 +16,10 @@ def auth_token(request):
 
 
 @pytest.fixture
-def query_parameters():
-    return QueryParameters()
+def default_title():
+    return "test title"
+
+
+@pytest.fixture
+def query_parameters(default_title):
+    return QueryParameters().title(default_title)
