@@ -6,7 +6,6 @@ import pytest
 from httpx import Response
 
 from meta_paper.adapters import OpenCitationsAdapter
-from meta_paper.search import QueryParameters
 
 
 @pytest.fixture
@@ -20,7 +19,7 @@ def oc_metadata_response():
 
 
 @pytest.fixture
-def default_request_handler(oc_refs_response, oc_metadata_response):
+def request_handler_side_effect(oc_refs_response, oc_metadata_response):
     def __handler(request):
         req_url = str(request.url)
         responses = {
@@ -29,30 +28,19 @@ def default_request_handler(oc_refs_response, oc_metadata_response):
         }
         return responses[req_url]
 
-    return AsyncMock(name="default_request_handler", side_effect=__handler)
+    return __handler
 
 
 @pytest.fixture
-def http_client(request, default_request_handler):
-    handler = request.param if hasattr(request, "param") else default_request_handler
-    return httpx.AsyncClient(transport=httpx.MockTransport(handler=handler))
+def request_handler(request_handler_side_effect):
+    return AsyncMock(
+        name="default_request_handler", side_effect=request_handler_side_effect
+    )
 
 
 @pytest.fixture
-def api_token(request):
-    return request.param if hasattr(request, "param") else None
-
-
-@pytest.fixture
-def query_parameters():
-    class QueryParametersStub(QueryParameters[str]):
-        def make(self) -> str:
-            return ""
-    return QueryParametersStub()
-
-@pytest.fixture
-def sut(http_client, api_token):
-    return OpenCitationsAdapter(http_client, api_token)
+def sut(http_client, auth_token):
+    return OpenCitationsAdapter(http_client, auth_token)
 
 
 def test_init_defaults(sut):
@@ -60,26 +48,26 @@ def test_init_defaults(sut):
 
 
 @pytest.mark.parametrize(
-    "api_token,expected",
+    "auth_token,expected",
     [("abc", {"Authorization": "abc"}), (None, {}), ("", {})],
-    indirect=["api_token"],
+    indirect=["auth_token"],
 )
-def test_init_api_token(sut, api_token, expected):
+def test_init_api_token(sut, auth_token, expected):
     assert sut.http_headers == expected
 
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize(
-    "doi,api_token,expected_auth",
+    "doi,auth_token,expected_auth",
     [("doi:123/456", None, None), ("123/456", None, None), ("123/456", "abcd", "abcd")],
 )
 async def test_details_makes_expected_call_to_references_api(
-    sut, default_request_handler, doi, api_token, expected_auth
+    sut, request_handler, doi, auth_token, expected_auth
 ):
     await sut.details(doi)
 
-    assert len(default_request_handler.call_args_list) == 2
-    refs_request = default_request_handler.call_args_list[0].args[0]
+    assert len(request_handler.call_args_list) == 2
+    refs_request = request_handler.call_args_list[0].args[0]
     assert refs_request.method == "GET"
     assert (
         str(refs_request.url)
@@ -87,7 +75,7 @@ async def test_details_makes_expected_call_to_references_api(
     )
     assert refs_request.headers.get("Authorization") == expected_auth
 
-    meta_request = default_request_handler.call_args_list[1].args[0]
+    meta_request = request_handler.call_args_list[1].args[0]
     assert (
         str(meta_request.url) == "https://w3id.org/oc/meta/api/v1/metadata/doi:123/456"
     )
@@ -96,8 +84,12 @@ async def test_details_makes_expected_call_to_references_api(
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("status_code", [status for status in HTTPStatus if status >= 400])
-async def test_details_raise_error_on_refs_error_re(sut, default_request_handler, oc_refs_response, status_code):
+@pytest.mark.parametrize(
+    "status_code", [status for status in HTTPStatus if status >= 400]
+)
+async def test_details_raise_error_on_refs_error_re(
+    sut, request_handler, oc_refs_response, status_code
+):
     oc_refs_response.status_code = status_code
 
     with pytest.raises(httpx.HTTPStatusError) as err_wrapper:
@@ -105,12 +97,16 @@ async def test_details_raise_error_on_refs_error_re(sut, default_request_handler
 
     assert err_wrapper.value is not None
     assert str(status_code) in str(err_wrapper.value)
-    assert len(default_request_handler.call_args_list) == 1
+    assert len(request_handler.call_args_list) == 1
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("status_code", [status for status in HTTPStatus if status >= 400])
-async def test_details_raise_error_on_metadata_endpoint_error(sut, default_request_handler, oc_metadata_response, status_code):
+@pytest.mark.parametrize(
+    "status_code", [status for status in HTTPStatus if status >= 400]
+)
+async def test_details_raise_error_on_metadata_endpoint_error(
+    sut, request_handler, oc_metadata_response, status_code
+):
     oc_metadata_response.status_code = status_code
 
     with pytest.raises(httpx.HTTPStatusError) as err_wrapper:
@@ -118,7 +114,7 @@ async def test_details_raise_error_on_metadata_endpoint_error(sut, default_reque
 
     assert err_wrapper.value is not None
     assert str(status_code) in str(err_wrapper.value)
-    assert len(default_request_handler.call_args_list) == 2
+    assert len(request_handler.call_args_list) == 2
 
 
 @pytest.mark.asyncio

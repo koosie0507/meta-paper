@@ -1,19 +1,21 @@
 import httpx
 
-from meta_paper.search import SemanticScholarQueryParameters, QueryParameters
+from meta_paper.search import QueryParameters
 
 
-def test_semantic_scholar_query_parameters_factory_method():
-    assert isinstance(
-        QueryParameters.semantic_scholar(),
-        SemanticScholarQueryParameters
-    )
+def test_title():
+    sut = QueryParameters().title("abc")
 
-
-def test_semantic_scholar_query_title():
-    sut = SemanticScholarQueryParameters().title("abc")
-
-    actual = sut.make()
+    actual = sut.semantic_scholar()
 
     assert isinstance(actual, httpx.QueryParams)
     assert actual.get("query") == "abc"
+
+
+def test_empty_params():
+    sut = QueryParameters()
+
+    actual = sut.semantic_scholar()
+
+    assert isinstance(actual, httpx.QueryParams)
+    assert "query" not in actual

@@ -1,4 +1,4 @@
-from meta_paper.search._params import QueryParameters, SemanticScholarQueryParameters
+from meta_paper.search._params import QueryParameters
 
 
-__all__ = ["QueryParameters", "SemanticScholarQueryParameters"]
+__all__ = ["QueryParameters"]

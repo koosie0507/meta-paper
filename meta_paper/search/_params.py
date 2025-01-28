@@ -1,29 +1,18 @@
-from abc import ABCMeta, abstractmethod
-from typing import Any, TypeVar, Generic
+from typing import Any
 
 import httpx
 
 
-T = TypeVar("T")
-
-
-class QueryParameters(Generic[T], metaclass=ABCMeta):
+class QueryParameters:
     def __init__(self):
-        self._filters = {}
+        self.__title = None
 
     def title(self, value: str) -> "QueryParameters":
-        self._filters["title"] = value
+        self.__title = value
         return self
 
-    @classmethod
-    def semantic_scholar(cls):
-        return SemanticScholarQueryParameters()
-
-    @abstractmethod
-    def make(self) -> T:
-        pass
-
-
-class SemanticScholarQueryParameters(QueryParameters[httpx.QueryParams]):
-    def make(self) -> httpx.QueryParams:
-        return httpx.QueryParams(query=self._filters["title"])
+    def semantic_scholar(self) -> "Any":
+        result = httpx.QueryParams()
+        if self.__title:
+            result = result.set("query", self.__title)
+        return result
