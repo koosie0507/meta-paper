@@ -83,5 +83,5 @@ new-tag:
 	echo "Pushed tag v$$VERSION" ||\
 	echo "Failed to push tag v$$VERSION"
 
-package:
+package: $(last_bootstrap)
 	poetry build && poetry publish
