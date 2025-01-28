@@ -23,11 +23,8 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Install dependencies
-        run: poetry install
-
-      - name: Run tests
-        run: poetry run pytest
+      - name: Run linter and unit tests
+        run: make check && make test
 
   publish:
     name: Publish Package
