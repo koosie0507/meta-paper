@@ -38,6 +38,12 @@ test: $(last_bootstrap)
 	@echo "Running tests with pytest..."
 	poetry run pytest tests/
 
+re-tag:
+	git push --delete origin refs/tags/$(TAG) &&\
+	git tag --delete $(TAG) &&\
+	git tag $(TAG) &&\
+	git push --tags
+
 # Helper function to bump version, commit, and tag
 bump-version:
 	@poetry version $(PART)
