@@ -18,10 +18,12 @@ from meta_paper.search import QueryParameters
 class PaperMetadataClient:
     def __init__(self, http_client: httpx.AsyncClient | None = None):
         self.__providers: list[PaperMetadataAdapter] = []
-        self.__http = http_client or httpx.AsyncClient(headers={
-            "Accept": "application/json",
-            "Accept-Encoding": "deflate,gzip;q=1.0",
-        })
+        self.__http = http_client or httpx.AsyncClient(
+            headers={
+                "Accept": "application/json",
+                "Accept-Encoding": "deflate,gzip;q=1.0",
+            }
+        )
 
     @property
     def providers(self) -> Sequence[PaperMetadataAdapter]:
