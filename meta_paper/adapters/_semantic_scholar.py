@@ -42,7 +42,7 @@ class SemanticScholarAdapter(DOIPrefixMixin, PaperMetadataAdapter):
     async def details(self, doi: str) -> PaperDetails:
         doi = self._prepend_doi(doi)
         paper_details_endpoint = f"{self.BASE_URL}/paper/{doi}"
-        params = {"fields": "title,authors,references,abstract,externalIds"}
+        params = {"fields": "title,authors,references.externalIds,abstract"}
         response = await self.__http.get(
             paper_details_endpoint, headers=self.__request_headers, params=params
         )
@@ -70,11 +70,11 @@ class SemanticScholarAdapter(DOIPrefixMixin, PaperMetadataAdapter):
 
     @staticmethod
     def __has_valid_doi(paper_info: dict) -> bool:
-        return (
-            "externalIds" in paper_info
-            and "DOI" in paper_info["externalIds"]
-            and paper_info["externalIds"]["DOI"]
-        )
+        if not paper_info.get("externalIds"):
+            return False
+        if "DOI" not in paper_info["externalIds"]:
+            return False
+        return bool(paper_info["externalIds"]["DOI"])
 
     @staticmethod
     def __get_author_names(author_data: dict) -> list[str]:

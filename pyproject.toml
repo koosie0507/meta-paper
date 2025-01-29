@@ -1,6 +1,6 @@
 [project]
 name = "meta-paper"
-version = "0.1.2"
+version = "0.1.4"
 description = "Python client for fetching scientific paper metadata from multiple sources"
 authors = [
     {name = "Andrei Olar", email = "andrei.olar@gmail.com"}
