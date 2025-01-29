@@ -10,8 +10,11 @@ from tenacity import (
 
 from meta_paper.adapters._base import PaperListing, PaperDetails, PaperMetadataAdapter
 from meta_paper.adapters._doi_prefix import DOIPrefixMixin
-from meta_paper.adapters._retry import retry_semantic_scholar
 from meta_paper.search import QueryParameters
+
+
+def _retry_semantic_scholar(exc: BaseException) -> bool:
+    return isinstance(exc, httpx.HTTPStatusError) and exc.response.status_code == 429
 
 
 class SemanticScholarAdapter(DOIPrefixMixin, PaperMetadataAdapter):
@@ -26,7 +29,7 @@ class SemanticScholarAdapter(DOIPrefixMixin, PaperMetadataAdapter):
         return self.__request_headers
 
     @retry(
-        retry=retry_if_exception(retry_semantic_scholar),
+        retry=retry_if_exception(_retry_semantic_scholar),
         stop=stop_after_delay(timedelta(seconds=10)),
         wait=wait_exponential_jitter(1, 8),
     )
@@ -54,7 +57,7 @@ class SemanticScholarAdapter(DOIPrefixMixin, PaperMetadataAdapter):
         ]
 
     @retry(
-        retry=retry_if_exception(retry_semantic_scholar),
+        retry=retry_if_exception(_retry_semantic_scholar),
         stop=stop_after_delay(timedelta(seconds=10)),
         wait=wait_exponential_jitter(1, 8),
     )
