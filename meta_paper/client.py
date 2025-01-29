@@ -39,7 +39,9 @@ class PaperMetadataClient:
         self.__providers.append(SemanticScholarAdapter(self.__http, api_key))
         return self
 
-    def use_custom_provider(self, provider: PaperMetadataAdapter) -> "PaperMetadataClient":
+    def use_custom_provider(
+        self, provider: PaperMetadataAdapter
+    ) -> "PaperMetadataClient":
         self.__providers.append(provider)
         return self
 
@@ -58,14 +60,22 @@ class PaperMetadataClient:
         doi = max((summary.doi for summary in summaries), key=len, default="")
         title = max((summary.title for summary in summaries), key=len, default="")
         abstract = max((summary.abstract for summary in summaries), key=len, default="")
-        refs = set(itertools.chain.from_iterable(summary.references for summary in summaries))
-        authors = set(author for author in itertools.chain.from_iterable(summary.authors for summary in summaries) if author)
+        refs = set(
+            itertools.chain.from_iterable(summary.references for summary in summaries)
+        )
+        authors = set(
+            author
+            for author in itertools.chain.from_iterable(
+                summary.authors for summary in summaries
+            )
+            if author
+        )
         return PaperDetails(
             doi=doi,
             title=title,
             abstract=abstract,
             references=list(refs),
-            authors=list(authors)
+            authors=list(authors),
         )
 
     @staticmethod

@@ -12,7 +12,13 @@ from meta_paper.search import QueryParameters
 class StubProvider(PaperMetadataAdapter):
     def __init__(self, search_results=None, details=None):
         self._results = search_results or []
-        self._details = details or PaperDetails("doi:10.1234/5678", "test title", ["test author"], "test abstract", ["doi:10.1234/5678"])
+        self._details = details or PaperDetails(
+            "doi:10.1234/5678",
+            "test title",
+            ["test author"],
+            "test abstract",
+            ["doi:10.1234/5678"],
+        )
 
     async def search(self, query: QueryParameters) -> list[PaperListing]:
         await asyncio.sleep(0.25)
@@ -92,10 +98,18 @@ async def test_search_calls_registered_providers(
 
 @pytest.mark.asyncio
 async def test_client_returns_longest_doi(http_client):
-    sut = PaperMetadataClient(http_client).use_custom_provider(
-        StubProvider(details=PaperDetails("10.1234/5678", "t", ["a"], "a", ["10.1234/5678"]))
-    ).use_custom_provider(
-        StubProvider(details=PaperDetails("10.1234/56789", "t", ["a"], "a", ["10.1234/5678"]))
+    sut = (
+        PaperMetadataClient(http_client)
+        .use_custom_provider(
+            StubProvider(
+                details=PaperDetails("10.1234/5678", "t", ["a"], "a", ["10.1234/5678"])
+            )
+        )
+        .use_custom_provider(
+            StubProvider(
+                details=PaperDetails("10.1234/56789", "t", ["a"], "a", ["10.1234/5678"])
+            )
+        )
     )
     actual = await sut.details("10.1234/5678")
 
@@ -104,10 +118,20 @@ async def test_client_returns_longest_doi(http_client):
 
 @pytest.mark.asyncio
 async def test_client_returns_longest_title(http_client):
-    sut = PaperMetadataClient(http_client).use_custom_provider(
-        StubProvider(details=PaperDetails("10.1234/5678", "t", ["a"], "a", ["10.1234/5678"]))
-    ).use_custom_provider(
-        StubProvider(details=PaperDetails("10.1234/56789", "ti", ["a"], "a", ["10.1234/5678"]))
+    sut = (
+        PaperMetadataClient(http_client)
+        .use_custom_provider(
+            StubProvider(
+                details=PaperDetails("10.1234/5678", "t", ["a"], "a", ["10.1234/5678"])
+            )
+        )
+        .use_custom_provider(
+            StubProvider(
+                details=PaperDetails(
+                    "10.1234/56789", "ti", ["a"], "a", ["10.1234/5678"]
+                )
+            )
+        )
     )
     actual = await sut.details("10.1234/5678")
 
@@ -116,10 +140,18 @@ async def test_client_returns_longest_title(http_client):
 
 @pytest.mark.asyncio
 async def test_client_returns_longest_abstract(http_client):
-    sut = PaperMetadataClient(http_client).use_custom_provider(
-        StubProvider(details=PaperDetails("10.1234/5678", "t", ["a"], "a2", ["10.1234/5678"]))
-    ).use_custom_provider(
-        StubProvider(details=PaperDetails("10.1234/56789", "t", ["a"], "a", ["10.1234/5678"]))
+    sut = (
+        PaperMetadataClient(http_client)
+        .use_custom_provider(
+            StubProvider(
+                details=PaperDetails("10.1234/5678", "t", ["a"], "a2", ["10.1234/5678"])
+            )
+        )
+        .use_custom_provider(
+            StubProvider(
+                details=PaperDetails("10.1234/56789", "t", ["a"], "a", ["10.1234/5678"])
+            )
+        )
     )
     actual = await sut.details("10.1234/5678")
 
@@ -128,10 +160,18 @@ async def test_client_returns_longest_abstract(http_client):
 
 @pytest.mark.asyncio
 async def test_client_returns_unique_authors(http_client):
-    sut = PaperMetadataClient(http_client).use_custom_provider(
-        StubProvider(details=PaperDetails("10.1234/5678", "t", ["a"], "a2", ["10.1234/5678"]))
-    ).use_custom_provider(
-        StubProvider(details=PaperDetails("10.1234/56789", "t", ["a"], "a", ["10.1234/5678"]))
+    sut = (
+        PaperMetadataClient(http_client)
+        .use_custom_provider(
+            StubProvider(
+                details=PaperDetails("10.1234/5678", "t", ["a"], "a2", ["10.1234/5678"])
+            )
+        )
+        .use_custom_provider(
+            StubProvider(
+                details=PaperDetails("10.1234/56789", "t", ["a"], "a", ["10.1234/5678"])
+            )
+        )
     )
     actual = await sut.details("10.1234/5678")
 
@@ -140,10 +180,18 @@ async def test_client_returns_unique_authors(http_client):
 
 @pytest.mark.asyncio
 async def test_client_returns_unique_refs(http_client):
-    sut = PaperMetadataClient(http_client).use_custom_provider(
-        StubProvider(details=PaperDetails("10.1234/5678", "t", ["a"], "a2", ["10.1234/5678"]))
-    ).use_custom_provider(
-        StubProvider(details=PaperDetails("10.1234/56789", "t", ["a"], "a", ["10.1234/5678"]))
+    sut = (
+        PaperMetadataClient(http_client)
+        .use_custom_provider(
+            StubProvider(
+                details=PaperDetails("10.1234/5678", "t", ["a"], "a2", ["10.1234/5678"])
+            )
+        )
+        .use_custom_provider(
+            StubProvider(
+                details=PaperDetails("10.1234/56789", "t", ["a"], "a", ["10.1234/5678"])
+            )
+        )
     )
     actual = await sut.details("10.1234/5678")
 
