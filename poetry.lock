@@ -402,6 +402,22 @@ files = [
 ]
 
 [[package]]
+name = "tenacity"
+version = "9.0.0"
+description = "Retry code until it succeeds"
+optional = false
+python-versions = ">=3.8"
+groups = ["main"]
+files = [
+    {file = "tenacity-9.0.0-py3-none-any.whl", hash = "sha256:93de0c98785b27fcf659856aa9f54bfbd399e29969b0621bc7f762bd441b4539"},
+    {file = "tenacity-9.0.0.tar.gz", hash = "sha256:807f37ca97d62aa361264d497b0e31e92b8027044942bfa756160d908320d73b"},
+]
+
+[package.extras]
+doc = ["reno", "sphinx"]
+test = ["pytest", "tornado (>=4.5)", "typeguard"]
+
+[[package]]
 name = "typing-extensions"
 version = "4.12.2"
 description = "Backported and Experimental Type Hints for Python 3.8+"
@@ -417,4 +433,4 @@ markers = {main = "python_version < \"3.13\""}
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.11"
-content-hash = "de81b82351e8c3a53c622c3090c2b34689f57bacc1d34ff5dc0f3535eeb0249d"
+content-hash = "34293e218eb3cbd40c4608c1d32f2dda280d7c11760f17f1062e5c69eff29bff"

@@ -1,7 +1,16 @@
+from datetime import timedelta
+
 import httpx
+from tenacity import (
+    retry,
+    stop_after_delay,
+    wait_exponential_jitter,
+    retry_if_exception,
+)
 
 from meta_paper.adapters._base import PaperListing, PaperDetails, PaperMetadataAdapter
 from meta_paper.adapters._doi_prefix import DOIPrefixMixin
+from meta_paper.adapters._retry import retry_semantic_scholar
 from meta_paper.search import QueryParameters
 
 
@@ -16,6 +25,11 @@ class SemanticScholarAdapter(DOIPrefixMixin, PaperMetadataAdapter):
     def request_headers(self) -> dict:
         return self.__request_headers
 
+    @retry(
+        retry=retry_if_exception(retry_semantic_scholar),
+        stop=stop_after_delay(timedelta(seconds=10)),
+        wait=wait_exponential_jitter(1, 8),
+    )
     async def search(self, query: QueryParameters) -> list[PaperListing]:
         search_endpoint = f"{self.BASE_URL}/paper/search"
         query_params = query.semantic_scholar().set(
@@ -39,6 +53,11 @@ class SemanticScholarAdapter(DOIPrefixMixin, PaperMetadataAdapter):
             and (author_names := self.__get_author_names(paper_info))
         ]
 
+    @retry(
+        retry=retry_if_exception(retry_semantic_scholar),
+        stop=stop_after_delay(timedelta(seconds=10)),
+        wait=wait_exponential_jitter(1, 8),
+    )
     async def details(self, doi: str) -> PaperDetails:
         doi = self._prepend_doi(doi)
         paper_details_endpoint = f"{self.BASE_URL}/paper/{doi}"
