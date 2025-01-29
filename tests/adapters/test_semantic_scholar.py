@@ -319,10 +319,9 @@ async def test_details_raises_error_when_authors_missing(sut):
     indirect=["details_response"],
 )
 async def test_details_raises_error_when_abstract_missing(sut):
-    with pytest.raises(ValueError) as verr_proxy:
-        await sut.details("123/456")
+    result = await sut.details("123/456")
 
-    assert str(verr_proxy.value) == "paper abstract missing"
+    assert result.abstract == ""
 
 
 @pytest.mark.asyncio

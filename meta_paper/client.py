@@ -39,6 +39,12 @@ class PaperMetadataClient:
         self.__providers.append(SemanticScholarAdapter(self.__http, api_key))
         return self
 
+    def use_custom_provider(
+        self, provider: PaperMetadataAdapter
+    ) -> "PaperMetadataClient":
+        self.__providers.append(provider)
+        return self
+
     async def search(self, query: QueryParameters) -> list[PaperListing]:
         """Perform an asynchronous search across all providers."""
         tasks = [provider.search(query) for provider in self.providers]
@@ -50,19 +56,27 @@ class PaperMetadataClient:
         """Fetch paper summaries asynchronously from all providers."""
         tasks = [provider.details(doi) for provider in self.providers]
         summaries = await asyncio.gather(*tasks)
-        details = {}
-        refs = set()
-        authors = set()
-        for summary in summaries:
-            details["doi"] = summary.doi or details.get("doi", "")
-            details["title"] = summary.title or details.get("title", "")
-            details["abstract"] = summary.abstract or details.get("abstract", "")
-            for ref in summary.references:
-                refs.add(ref)
-            for author in summary.authors:
-                if author:
-                    authors.add(author)
-        return PaperDetails(**details, references=list(refs), authors=list(authors))
+
+        doi = max((summary.doi for summary in summaries), key=len, default="")
+        title = max((summary.title for summary in summaries), key=len, default="")
+        abstract = max((summary.abstract for summary in summaries), key=len, default="")
+        refs = set(
+            itertools.chain.from_iterable(summary.references for summary in summaries)
+        )
+        authors = set(
+            author
+            for author in itertools.chain.from_iterable(
+                summary.authors for summary in summaries
+            )
+            if author
+        )
+        return PaperDetails(
+            doi=doi,
+            title=title,
+            abstract=abstract,
+            references=list(refs),
+            authors=list(authors),
+        )
 
     @staticmethod
     def __dedupe_by_doi(
