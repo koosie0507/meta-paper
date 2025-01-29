@@ -76,7 +76,7 @@ class SemanticScholarAdapter(DOIPrefixMixin, PaperMetadataAdapter):
         if not (authors := self.__get_author_names(paper_data)):
             raise ValueError("paper authors missing")
         if not (abstract := paper_data.get("abstract")):
-            raise ValueError("paper abstract missing")
+            abstract = ""
 
         return PaperDetails(
             doi=doi,
