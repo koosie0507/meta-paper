@@ -1,10 +1,11 @@
 import httpx
 
 from meta_paper.adapters._base import PaperListing, PaperDetails, PaperMetadataAdapter
+from meta_paper.adapters._doi_prefix import DOIPrefixMixin
 from meta_paper.search import QueryParameters
 
 
-class SemanticScholarAdapter(PaperMetadataAdapter):
+class SemanticScholarAdapter(DOIPrefixMixin, PaperMetadataAdapter):
     BASE_URL = "https://api.semanticscholar.org/graph/v1"
 
     def __init__(self, http_client: httpx.AsyncClient, api_key: str | None = None):
@@ -39,7 +40,7 @@ class SemanticScholarAdapter(PaperMetadataAdapter):
         ]
 
     async def details(self, doi: str) -> PaperDetails:
-        doi = self.__prepend_doi_prefix(doi)
+        doi = self._prepend_doi(doi)
         paper_details_endpoint = f"{self.BASE_URL}/paper/{doi}"
         params = {"fields": "title,authors,references,abstract,externalIds"}
         response = await self.__http.get(
@@ -61,18 +62,11 @@ class SemanticScholarAdapter(PaperMetadataAdapter):
             authors=authors,
             abstract=abstract,
             references=[
-                self.__prepend_doi_prefix(ref["externalIds"]["DOI"])
+                self._prepend_doi(ref["externalIds"]["DOI"])
                 for ref in paper_data["references"]
                 if self.__has_valid_doi(ref)
             ],
         )
-
-    @staticmethod
-    def __prepend_doi_prefix(doi: str) -> str:
-        doi = doi.strip()
-        if not doi.startswith("DOI:"):
-            doi = f"DOI:{doi}"
-        return doi
 
     @staticmethod
     def __has_valid_doi(paper_info: dict) -> bool:

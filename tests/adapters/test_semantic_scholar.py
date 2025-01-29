@@ -339,3 +339,14 @@ async def test_details_calls_api_endpoint_as_expected(
     assert request.url.path == "/graph/v1/paper/DOI:123/456"
     assert request.method == "GET"
     assert request.headers.get("x-api-key") == expected_api_key
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "doi", ["123/456", "doi:123/456", "DOI:123/456", "dOi:123/456"]
+)
+async def test_details_handles_doi_str_variations(sut, request_handler, doi):
+    await sut.details(doi)
+
+    request = request_handler.call_args_list[0].args[0]
+    assert request.url.path == "/graph/v1/paper/DOI:123/456"

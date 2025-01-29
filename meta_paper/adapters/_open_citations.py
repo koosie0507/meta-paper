@@ -3,10 +3,11 @@ import re
 import httpx
 
 from meta_paper.adapters._base import PaperDetails, PaperListing, PaperMetadataAdapter
+from meta_paper.adapters._doi_prefix import DOIPrefixMixin
 from meta_paper.search import QueryParameters
 
 
-class OpenCitationsAdapter(PaperMetadataAdapter):
+class OpenCitationsAdapter(DOIPrefixMixin, PaperMetadataAdapter):
     REFERENCES_REST_API = "https://opencitations.net/index/api/v2"
     META_REST_API = "https://w3id.org/oc/meta/api/v1"
     DOI_RE = re.compile(r"\b(doi:[0-9a-z./]+)\b", re.IGNORECASE)
@@ -26,10 +27,7 @@ class OpenCitationsAdapter(PaperMetadataAdapter):
 
     async def details(self, doi: str) -> PaperDetails:
         """Fetch references and citations for a DOI."""
-
-        doi = doi.strip()
-        if not doi.startswith("doi:"):
-            doi = f"doi:{doi}"
+        doi = self._prepend_doi(doi, False)
 
         response = await self.__http.get(
             f"{self.REFERENCES_REST_API}/references/{doi}", headers=self.__headers

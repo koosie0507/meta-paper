@@ -26,12 +26,18 @@ def semantic_scholar_search_response(request, semantic_scholar_search_result):
 
 @pytest.fixture
 def request_handler(semantic_scholar_search_response):
-    return AsyncMock(name="client_request_handler", return_value=semantic_scholar_search_response)
+    return AsyncMock(
+        name="client_request_handler", return_value=semantic_scholar_search_response
+    )
 
 
 @pytest.fixture
 def metadata_client(http_client, auth_token):
-    return PaperMetadataClient(http_client).use_open_citations(auth_token).use_semantic_scholar(auth_token)
+    return (
+        PaperMetadataClient(http_client)
+        .use_open_citations(auth_token)
+        .use_semantic_scholar(auth_token)
+    )
 
 
 def test_client_init():
