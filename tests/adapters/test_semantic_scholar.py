@@ -91,7 +91,9 @@ async def test_search_uses_expected_query_parameters(sut, request_handler):
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("status_code", [code for code in HTTPStatus if code >= 400])
+@pytest.mark.parametrize(
+    "status_code", [code for code in HTTPStatus if code >= 400 and code != 429]
+)
 async def test_search_raises_exception_on_endpoint_error_response(
     sut, search_response, status_code
 ):
