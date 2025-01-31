@@ -4,6 +4,7 @@ from collections.abc import Sequence
 from typing import Iterable, Generator
 
 import httpx
+from tenacity import RetryError
 
 from meta_paper.adapters import (
     OpenCitationsAdapter,
@@ -55,7 +56,14 @@ class PaperMetadataClient:
     async def details(self, doi: str) -> PaperDetails:
         """Fetch paper summaries asynchronously from all providers."""
         tasks = [provider.details(doi) for provider in self.providers]
-        summaries = await asyncio.gather(*tasks)
+        summaries = []
+        for coro in asyncio.as_completed(tasks):
+            try:
+                summaries.append(await coro)
+            except RetryError:
+                print(f"retry count exceeded for doi '{doi}'")
+            except Exception as exc:
+                print("generic error fetching '%s': %s" % (doi, exc))
 
         doi = max((summary.doi for summary in summaries), key=len, default="")
         title = max((summary.title for summary in summaries), key=len, default="")
