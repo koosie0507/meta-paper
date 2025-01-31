@@ -26,6 +26,8 @@ class StubProvider(PaperMetadataAdapter):
 
     async def details(self, doi: str) -> PaperDetails:
         await asyncio.sleep(0.25)
+        if isinstance(self._details, Exception):
+            raise self._details
         return self._details
 
 
@@ -195,4 +197,24 @@ async def test_client_returns_unique_refs(http_client):
     )
     actual = await sut.details("10.1234/5678")
 
+    assert actual.references == ["10.1234/5678"]
+
+
+@pytest.mark.asyncio
+async def test_details_returns_data_from_successful_provider(http_client):
+    sut = (
+        PaperMetadataClient(http_client)
+        .use_custom_provider(StubProvider(details=Exception("test error")))
+        .use_custom_provider(
+            StubProvider(
+                details=PaperDetails("10.1234/56789", "t", ["a"], "a", ["10.1234/5678"])
+            )
+        )
+    )
+    actual = await sut.details("10.1234/5678")
+
+    assert actual.doi == "10.1234/56789"
+    assert actual.title == "t"
+    assert actual.authors == ["a"]
+    assert actual.abstract == "a"
     assert actual.references == ["10.1234/5678"]
