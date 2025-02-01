@@ -1,4 +1,5 @@
 import re
+from typing import Iterable
 
 import httpx
 from tenacity import (
@@ -44,12 +45,11 @@ class OpenCitationsAdapter(DOIPrefixMixin, PaperMetadataAdapter):
         wait=wait_exponential_jitter(max=10),
         stop=stop_after_delay(10),
     )
-    async def details(self, doi: str) -> PaperDetails:
+    async def get_one(self, doi: str | Iterable[str]) -> PaperDetails:
         """Fetch references and citations for a DOI."""
         doi = self._prepend_doi(doi, False)
         if not self.DOI_RE.match(doi):
             raise ValueError(f"{doi} is not a valid DOI")
-
         response = await self.__http.get(
             f"{self.REFERENCES_REST_API}/references/{doi}", headers=self.__headers
         )
@@ -74,3 +74,6 @@ class OpenCitationsAdapter(DOIPrefixMixin, PaperMetadataAdapter):
             abstract="",
             references=refs,
         )
+
+    async def get_many(self, identifiers: Iterable[str]) -> Iterable[PaperDetails]:
+        return []

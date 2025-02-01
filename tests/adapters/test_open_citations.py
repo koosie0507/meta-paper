@@ -68,7 +68,7 @@ def test_init_api_token(sut, auth_token, expected):
 async def test_details_makes_expected_call_to_references_api(
     sut, request_handler, doi, auth_token, expected_auth
 ):
-    await sut.details(doi)
+    await sut.get_one(doi)
 
     assert len(request_handler.call_args_list) == 2
     refs_request = request_handler.call_args_list[0].args[0]
@@ -95,7 +95,7 @@ async def test_details_raise_error_on_refs_error_re(
     oc_refs_response.status_code = status_code
 
     with pytest.raises(httpx.HTTPStatusError) as err_wrapper:
-        await sut.details("10.1234/5678")
+        await sut.get_one("10.1234/5678")
 
     assert err_wrapper.value is not None
     assert str(status_code) in str(err_wrapper.value)
@@ -112,7 +112,7 @@ async def test_details_raise_error_on_metadata_endpoint_error(
     oc_metadata_response.status_code = status_code
 
     with pytest.raises(httpx.HTTPStatusError) as err_wrapper:
-        await sut.details("10.1234/5678")
+        await sut.get_one("10.1234/5678")
 
     assert err_wrapper.value is not None
     assert str(status_code) in str(err_wrapper.value)
