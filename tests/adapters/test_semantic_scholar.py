@@ -1,14 +1,10 @@
-import itertools
 import json
-import logging
-import sys
 from http import HTTPStatus
 from unittest.mock import AsyncMock
 
 import httpx
 import pytest
 from httpx import HTTPStatusError
-from tenacity import RetryError
 
 from meta_paper.adapters._semantic_scholar import SemanticScholarAdapter
 from meta_paper.search import QueryParameters
@@ -125,7 +121,8 @@ async def test_search_uses_expected_query_parameters(sut, request_handler):
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize(
-    "status_code", [code for code in HTTPStatus if code >= 400 and code not in {429, 504}]
+    "status_code",
+    [code for code in HTTPStatus if code >= 400 and code not in {429, 504}],
 )
 async def test_search_raises_exception_on_endpoint_error_response(
     sut, search_response, status_code
