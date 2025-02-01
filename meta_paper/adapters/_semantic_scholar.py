@@ -1,6 +1,6 @@
 import itertools
 from datetime import timedelta
-from typing import Iterable
+from typing import Iterable, AsyncGenerator
 
 import httpx
 from tenacity import (
@@ -99,11 +99,6 @@ class SemanticScholarAdapter(DOIPrefixMixin, PaperMetadataAdapter):
             pdf_url=self.__get_pdf_url(paper_data),
         )
 
-    @retry(
-        retry=retry_if_exception(_retry_semantic_scholar),
-        stop=stop_after_delay(timedelta(seconds=60)),
-        wait=wait_exponential_jitter(1, 8),
-    )
     async def get_many(self, identifiers: Iterable[str]) -> Iterable[PaperDetails]:
         if identifiers:
             identifiers = list(map(self._prepend_doi, filter(bool, identifiers)))
@@ -112,38 +107,46 @@ class SemanticScholarAdapter(DOIPrefixMixin, PaperMetadataAdapter):
 
         result = []
         for batch in self.__batch(identifiers):
-            response = await self.__http.post(
-                f"{self.__BASE_URL}/paper/batch",
-                headers=self.__request_headers,
-                params=self.__DETAIL_FIELDS,
-                json={"ids": batch},
-            )
-            response.raise_for_status()
-
-            paper_list = response.json()
-            for paper_data in paper_list:
-                if not (title := paper_data.get("title")):
-                    print("paper title missing")
-                    continue
-                if not (authors := self.__get_author_names(paper_data)):
-                    print("paper authors missing")
-                    continue
-                if not (abstract := paper_data.get("abstract")):
-                    abstract = ""
-                doi = self.__get_doi(paper_data.get("externalIds"))
-
-                result.append(
-                    PaperDetails(
-                        doi=doi,
-                        title=title,
-                        authors=authors,
-                        abstract=abstract,
-                        references=self.__get_references(paper_data),
-                        has_pdf=paper_data.get("isOpenAccess") or False,
-                        pdf_url=self.__get_pdf_url(paper_data),
-                    )
-                )
+            async for paper in self.__process_identifier_batch(batch):
+                result.append(paper)
         return result
+
+    @retry(
+        retry=retry_if_exception(_retry_semantic_scholar),
+        stop=stop_after_delay(timedelta(seconds=60)),
+        wait=wait_exponential_jitter(1, 8),
+    )
+    async def __process_identifier_batch(
+        self, batch: list[str]
+    ) -> AsyncGenerator[PaperDetails]:
+        response = await self.__http.post(
+            f"{self.__BASE_URL}/paper/batch",
+            headers=self.__request_headers,
+            params=self.__DETAIL_FIELDS,
+            json={"ids": batch},
+        )
+        response.raise_for_status()
+        paper_list = response.json()
+        for paper_data in paper_list:
+            if not (title := paper_data.get("title")):
+                print("paper title missing")
+                continue
+            if not (authors := self.__get_author_names(paper_data)):
+                print("paper authors missing")
+                continue
+            if not (abstract := paper_data.get("abstract")):
+                abstract = ""
+            doi = self.__get_doi(paper_data.get("externalIds"))
+
+            yield PaperDetails(
+                doi=doi,
+                title=title,
+                authors=authors,
+                abstract=abstract,
+                references=self.__get_references(paper_data),
+                has_pdf=paper_data.get("isOpenAccess") or False,
+                pdf_url=self.__get_pdf_url(paper_data),
+            )
 
     @staticmethod
     def __has_valid_doi(paper_info: dict) -> bool:
