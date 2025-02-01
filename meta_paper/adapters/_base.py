@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Protocol
+from typing import Protocol, Iterable
 
 from meta_paper.search import QueryParameters
 
@@ -18,11 +18,16 @@ class PaperDetails:
     authors: list[str]
     abstract: str
     references: list[str]
+    has_pdf: bool = False
+    pdf_url: str | None = None
 
 
 class PaperMetadataAdapter(Protocol):
     async def search(self, query: QueryParameters) -> list[PaperListing]:
         pass
 
-    async def details(self, doi: str) -> PaperDetails:
+    async def get_one(self, doi: str) -> PaperDetails:
+        pass
+
+    async def get_many(self, identifiers: Iterable[str]) -> Iterable[PaperDetails]:
         pass

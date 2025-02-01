@@ -24,7 +24,7 @@ class StubProvider(PaperMetadataAdapter):
         await asyncio.sleep(0.25)
         return self._results
 
-    async def details(self, doi: str) -> PaperDetails:
+    async def get_one(self, doi: str) -> PaperDetails:
         await asyncio.sleep(0.25)
         if isinstance(self._details, Exception):
             raise self._details
@@ -99,7 +99,7 @@ async def test_search_calls_registered_providers(
 
 
 @pytest.mark.asyncio
-async def test_client_returns_longest_doi(http_client):
+async def test_get_one_returns_longest_doi(http_client):
     sut = (
         PaperMetadataClient(http_client)
         .use_custom_provider(
@@ -113,13 +113,13 @@ async def test_client_returns_longest_doi(http_client):
             )
         )
     )
-    actual = await sut.details("10.1234/5678")
+    actual = await sut.get_one("10.1234/5678")
 
     assert actual.doi == "10.1234/56789"
 
 
 @pytest.mark.asyncio
-async def test_client_returns_longest_title(http_client):
+async def test_get_one_returns_longest_title(http_client):
     sut = (
         PaperMetadataClient(http_client)
         .use_custom_provider(
@@ -135,13 +135,13 @@ async def test_client_returns_longest_title(http_client):
             )
         )
     )
-    actual = await sut.details("10.1234/5678")
+    actual = await sut.get_one("10.1234/5678")
 
     assert actual.title == "ti"
 
 
 @pytest.mark.asyncio
-async def test_client_returns_longest_abstract(http_client):
+async def test_get_one_returns_longest_abstract(http_client):
     sut = (
         PaperMetadataClient(http_client)
         .use_custom_provider(
@@ -155,13 +155,13 @@ async def test_client_returns_longest_abstract(http_client):
             )
         )
     )
-    actual = await sut.details("10.1234/5678")
+    actual = await sut.get_one("10.1234/5678")
 
     assert actual.abstract == "a2"
 
 
 @pytest.mark.asyncio
-async def test_client_returns_unique_authors(http_client):
+async def test_get_one_returns_unique_authors(http_client):
     sut = (
         PaperMetadataClient(http_client)
         .use_custom_provider(
@@ -175,13 +175,13 @@ async def test_client_returns_unique_authors(http_client):
             )
         )
     )
-    actual = await sut.details("10.1234/5678")
+    actual = await sut.get_one("10.1234/5678")
 
     assert actual.authors == ["a"]
 
 
 @pytest.mark.asyncio
-async def test_client_returns_unique_refs(http_client):
+async def test_get_one_returns_unique_refs(http_client):
     sut = (
         PaperMetadataClient(http_client)
         .use_custom_provider(
@@ -195,13 +195,13 @@ async def test_client_returns_unique_refs(http_client):
             )
         )
     )
-    actual = await sut.details("10.1234/5678")
+    actual = await sut.get_one("10.1234/5678")
 
     assert actual.references == ["10.1234/5678"]
 
 
 @pytest.mark.asyncio
-async def test_details_returns_data_from_successful_provider(http_client):
+async def test_get_one_returns_data_from_successful_provider(http_client):
     sut = (
         PaperMetadataClient(http_client)
         .use_custom_provider(StubProvider(details=Exception("test error")))
@@ -211,7 +211,7 @@ async def test_details_returns_data_from_successful_provider(http_client):
             )
         )
     )
-    actual = await sut.details("10.1234/5678")
+    actual = await sut.get_one("10.1234/5678")
 
     assert actual.doi == "10.1234/56789"
     assert actual.title == "t"
