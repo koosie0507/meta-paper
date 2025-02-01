@@ -1,6 +1,6 @@
 import itertools
 from datetime import timedelta
-from typing import Iterable, AsyncGenerator
+from collections.abc import Iterable, AsyncGenerator
 
 import httpx
 from tenacity import (
