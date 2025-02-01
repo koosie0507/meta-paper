@@ -10,6 +10,9 @@ class PaperListing:
     title: str
     authors: list[str]
 
+    def __hash__(self):
+        return hash(self.doi)
+
 
 @dataclass
 class PaperDetails:
@@ -20,6 +23,9 @@ class PaperDetails:
     references: list[str]
     has_pdf: bool = False
     pdf_url: str | None = None
+
+    def __hash__(self):
+        return hash(self.doi)
 
 
 class PaperMetadataAdapter(Protocol):
