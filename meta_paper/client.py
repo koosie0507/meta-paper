@@ -1,6 +1,7 @@
 import asyncio
 import itertools
 from collections.abc import Sequence
+from logging import Logger
 from typing import Iterable, Generator, Callable
 
 import httpx
@@ -13,11 +14,14 @@ from meta_paper.adapters import (
     PaperDetails,
     PaperMetadataAdapter,
 )
+from meta_paper.logging import null_logger
 from meta_paper.search import QueryParameters
 
 
 class PaperMetadataClient:
-    def __init__(self, http_client: httpx.AsyncClient | None = None):
+    def __init__(
+        self, http_client: httpx.AsyncClient | None = None, logger: Logger | None = None
+    ) -> None:
         self.__providers: list[PaperMetadataAdapter] = []
         self.__http = http_client or httpx.AsyncClient(
             headers={
@@ -25,6 +29,7 @@ class PaperMetadataClient:
                 "Accept-Encoding": "deflate,gzip;q=1.0",
             }
         )
+        self.__logger = (logger or null_logger()).getChild(self.__class__.__name__)
 
     @property
     def providers(self) -> Sequence[PaperMetadataAdapter]:
@@ -37,7 +42,11 @@ class PaperMetadataClient:
 
     def use_semantic_scholar(self, api_key: str | None = None):
         """Add SemanticScholar adapter to the client."""
-        self.__providers.append(SemanticScholarAdapter(self.__http, api_key))
+        self.__providers.append(
+            SemanticScholarAdapter(
+                self.__http, api_key, self.__logger.getChild("SemanticScholarAdapter")
+            )
+        )
         return self
 
     def use_custom_provider(
@@ -57,13 +66,15 @@ class PaperMetadataClient:
         """Fetch paper summaries asynchronously from all providers."""
         tasks = [provider.get_one(doi) for provider in self.providers]
         paper_data = []
+
         for coro in asyncio.as_completed(tasks):
             try:
                 paper_data.append(await coro)
             except RetryError:
-                print(f"retry count exceeded for doi '{doi}'")
+                self.__logger.error("retry count exceeded for doi '%s'", doi)
             except Exception as exc:
-                print("generic error fetching '%s': %s" % (doi, exc))
+                self.__logger.fatal("generic error fetching '%s': %s", doi, exc)
+                self.__logger.debug("error details", exc_info=exc)
 
         return self.__to_paper_details(paper_data)
 
@@ -78,14 +89,12 @@ class PaperMetadataClient:
                     doi_papers = paper_data.get(paper.doi) or set()
                     doi_papers.add(paper)
                     paper_data[paper.doi] = doi_papers
-            except RetryError:
-                print(
-                    f"retry count exceeded for identifiers '{"','".join(identifiers)}'"
-                )
+            except RetryError as exc:
+                self.__logger.error("retry count exceeded while fetching batch")
+                self.__logger.debug("error details", exc_info=exc)
             except Exception as exc:
-                print(
-                    "generic error fetching '%s': %s" % ("','".join(identifiers), exc)
-                )
+                self.__logger.fatal("generic error while fetching batch")
+                self.__logger.debug("error details", exc_info=exc)
 
         return map(self.__to_paper_details, paper_data.values())
 

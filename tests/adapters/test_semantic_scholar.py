@@ -1,10 +1,14 @@
+import itertools
 import json
+import logging
+import sys
 from http import HTTPStatus
 from unittest.mock import AsyncMock
 
 import httpx
 import pytest
 from httpx import HTTPStatusError
+from tenacity import RetryError
 
 from meta_paper.adapters._semantic_scholar import SemanticScholarAdapter
 from meta_paper.search import QueryParameters
