@@ -1,3 +1,4 @@
+import itertools
 from datetime import timedelta
 from typing import Iterable
 
@@ -109,38 +110,39 @@ class SemanticScholarAdapter(DOIPrefixMixin, PaperMetadataAdapter):
         if not identifiers:
             return []
 
-        response = await self.__http.post(
-            f"{self.__BASE_URL}/paper/batch",
-            headers=self.__request_headers,
-            params=self.__DETAIL_FIELDS,
-            json={"ids": identifiers},
-        )
-        response.raise_for_status()
-
-        paper_list = response.json()
         result = []
-        for paper_data in paper_list:
-            if not (title := paper_data.get("title")):
-                print("paper title missing")
-                continue
-            if not (authors := self.__get_author_names(paper_data)):
-                print("paper authors missing")
-                continue
-            if not (abstract := paper_data.get("abstract")):
-                abstract = ""
-            doi = self.__get_doi(paper_data.get("externalIds"))
-
-            result.append(
-                PaperDetails(
-                    doi=doi,
-                    title=title,
-                    authors=authors,
-                    abstract=abstract,
-                    references=self.__get_references(paper_data),
-                    has_pdf=paper_data.get("isOpenAccess") or False,
-                    pdf_url=self.__get_pdf_url(paper_data),
-                )
+        for batch in self.__batch(identifiers):
+            response = await self.__http.post(
+                f"{self.__BASE_URL}/paper/batch",
+                headers=self.__request_headers,
+                params=self.__DETAIL_FIELDS,
+                json={"ids": batch},
             )
+            response.raise_for_status()
+
+            paper_list = response.json()
+            for paper_data in paper_list:
+                if not (title := paper_data.get("title")):
+                    print("paper title missing")
+                    continue
+                if not (authors := self.__get_author_names(paper_data)):
+                    print("paper authors missing")
+                    continue
+                if not (abstract := paper_data.get("abstract")):
+                    abstract = ""
+                doi = self.__get_doi(paper_data.get("externalIds"))
+
+                result.append(
+                    PaperDetails(
+                        doi=doi,
+                        title=title,
+                        authors=authors,
+                        abstract=abstract,
+                        references=self.__get_references(paper_data),
+                        has_pdf=paper_data.get("isOpenAccess") or False,
+                        pdf_url=self.__get_pdf_url(paper_data),
+                    )
+                )
         return result
 
     @staticmethod
@@ -182,3 +184,14 @@ class SemanticScholarAdapter(DOIPrefixMixin, PaperMetadataAdapter):
             filter(bool, map(lambda x: x.get("externalIds"), ref_objs))
         )
         return list(filter(bool, map(self.__get_doi, external_id_objs)))
+
+    @staticmethod
+    def __batch(
+        identifiers: Iterable[str], batch_size: int = 500
+    ) -> Iterable[list[str]]:
+        it = iter(identifiers)
+        while True:
+            batch = list(itertools.islice(it, batch_size))
+            if not batch:
+                return
+            yield batch
