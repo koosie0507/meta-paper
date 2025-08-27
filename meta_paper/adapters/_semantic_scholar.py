@@ -143,6 +143,8 @@ class SemanticScholarAdapter(DOIPrefixMixin, PaperMetadataAdapter):
                 paper_list = response.json()
 
                 for paper_data in paper_list:
+                    if paper_data is None:
+                        continue
                     if not (title := paper_data.get("title")):
                         self.__logger.debug("paper title missing")
                         continue

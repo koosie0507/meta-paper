@@ -486,3 +486,21 @@ async def test_get_many_handles_missing_references_as_expected(sut, request_hand
     assert len(result[0].references) == 0
     assert result[1].doi == "DOI:789/123"
     assert len(result[1].references) == 1
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "batch_response",
+    [
+        [
+            None,
+            new_detail(externalIds={"DOI": "789/123"}),
+        ],
+    ],
+    indirect=True,
+)
+async def test_get_many_handles_none_returns(sut, request_handler):
+    result = await sut.get_many(["123/456", "789/123"])
+
+    assert len(result) == 1
+    assert result[0].doi == "DOI:789/123"
