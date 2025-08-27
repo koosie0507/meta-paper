@@ -22,7 +22,7 @@ from meta_paper.search import QueryParameters
 class SemanticScholarAdapter(DOIPrefixMixin, PaperMetadataAdapter):
     __BASE_URL = "https://api.semanticscholar.org/graph/v1"
     __DETAIL_FIELDS = {
-        "fields": "externalIds,title,authors,publicationVenue,citations.externalIds,references.externalIds,abstract,isOpenAccess,openAccessPdf,url"
+        "fields": "externalIds,title,authors,publicationVenue,citations.externalIds,references.externalIds,abstract,isOpenAccess,openAccessPdf,url,year"
     }
     __RETRY_MESSAGES = {
         int(HTTPStatus.TOO_MANY_REQUESTS): "rate limited",
@@ -116,6 +116,7 @@ class SemanticScholarAdapter(DOIPrefixMixin, PaperMetadataAdapter):
             pdf_url=self.__get_pdf_url(paper_data),
             url=url,
             source=source,
+            year=int(paper_data.get("year", 0)),
         )
 
     async def get_many(self, identifiers: Iterable[str]) -> Iterable[PaperDetails]:
@@ -173,6 +174,7 @@ class SemanticScholarAdapter(DOIPrefixMixin, PaperMetadataAdapter):
                             pdf_url=self.__get_pdf_url(paper_data),
                             source=source,
                             url=url,
+                            year=int(paper_data.get("year", 0)),
                         )
                     )
         return result

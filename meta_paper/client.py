@@ -126,6 +126,7 @@ class PaperMetadataClient:
             has_pdf=has_pdf,
             pdf_url=pdf_url,
             url=url,
+            year=max(d.year for d in paper_data),
         )
 
     @staticmethod
