@@ -116,7 +116,7 @@ class SemanticScholarAdapter(DOIPrefixMixin, PaperMetadataAdapter):
             pdf_url=self.__get_pdf_url(paper_data),
             url=url,
             source=source,
-            year=int(paper_data.get("year", 0)),
+            year=self.__get_year(paper_data),
         )
 
     async def get_many(self, identifiers: Iterable[str]) -> Iterable[PaperDetails]:
@@ -174,7 +174,7 @@ class SemanticScholarAdapter(DOIPrefixMixin, PaperMetadataAdapter):
                             pdf_url=self.__get_pdf_url(paper_data),
                             source=source,
                             url=url,
-                            year=int(paper_data.get("year", 0)),
+                            year=self.__get_year(paper_data),
                         )
                     )
         return result
@@ -185,6 +185,13 @@ class SemanticScholarAdapter(DOIPrefixMixin, PaperMetadataAdapter):
             stop=stop_after_delay(timedelta(seconds=60)),
             wait=wait_exponential_jitter(3, 27, 3, 1.5),
         )
+
+    @staticmethod
+    def __get_year(paper_data: dict) -> int:
+        if "year" not in paper_data:
+            return -1
+        year_str = str(paper_data["year"] or -1)
+        return int(year_str)
 
     @staticmethod
     def __has_valid_doi(paper_info: dict) -> bool:
