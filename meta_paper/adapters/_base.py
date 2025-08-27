@@ -20,7 +20,10 @@ class PaperDetails:
     title: str
     authors: list[str]
     abstract: str
+    source: str
+    citations: list[str]
     references: list[str]
+    url: str
     has_pdf: bool = False
     pdf_url: str | None = None
 
