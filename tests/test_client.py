@@ -17,7 +17,10 @@ class StubProvider(PaperMetadataAdapter):
             "test title",
             ["test author"],
             "test abstract",
+            "test venue",
+            ["10.1234/5678"],
             ["doi:10.1234/5678"],
+            "https://example.org",
         )
 
     async def search(self, query: QueryParameters) -> list[PaperListing]:
@@ -104,12 +107,30 @@ async def test_get_one_returns_longest_doi(http_client):
         PaperMetadataClient(http_client)
         .use_custom_provider(
             StubProvider(
-                details=PaperDetails("10.1234/5678", "t", ["a"], "a", ["10.1234/5678"])
+                details=PaperDetails(
+                    "10.1234/5678",
+                    "t",
+                    ["a"],
+                    "a",
+                    "venue",
+                    ["10.1234/5678"],
+                    ["10.1234/5678"],
+                    "https://example.org",
+                )
             )
         )
         .use_custom_provider(
             StubProvider(
-                details=PaperDetails("10.1234/56789", "t", ["a"], "a", ["10.1234/5678"])
+                details=PaperDetails(
+                    "10.1234/56789",
+                    "t",
+                    ["a"],
+                    "a",
+                    "venue",
+                    ["10.1234/5678"],
+                    ["10.1234/5678"],
+                    "https://example.org",
+                )
             )
         )
     )
@@ -124,13 +145,29 @@ async def test_get_one_returns_longest_title(http_client):
         PaperMetadataClient(http_client)
         .use_custom_provider(
             StubProvider(
-                details=PaperDetails("10.1234/5678", "t", ["a"], "a", ["10.1234/5678"])
+                details=PaperDetails(
+                    "10.1234/5678",
+                    "t",
+                    ["a"],
+                    "a",
+                    "venue",
+                    ["10.1234/5678"],
+                    ["10.1234/5678"],
+                    "https://example.org",
+                )
             )
         )
         .use_custom_provider(
             StubProvider(
                 details=PaperDetails(
-                    "10.1234/56789", "ti", ["a"], "a", ["10.1234/5678"]
+                    "10.1234/56789",
+                    "ti",
+                    ["a"],
+                    "a",
+                    "venue",
+                    ["10.1234/5678"],
+                    ["10.1234/5678"],
+                    "https://example.org",
                 )
             )
         )
@@ -146,12 +183,30 @@ async def test_get_one_returns_longest_abstract(http_client):
         PaperMetadataClient(http_client)
         .use_custom_provider(
             StubProvider(
-                details=PaperDetails("10.1234/5678", "t", ["a"], "a2", ["10.1234/5678"])
+                details=PaperDetails(
+                    "10.1234/5678",
+                    "t",
+                    ["a"],
+                    "a2",
+                    "venue",
+                    ["10.1234/5678"],
+                    ["10.1234/5678"],
+                    "https://example.org",
+                )
             )
         )
         .use_custom_provider(
             StubProvider(
-                details=PaperDetails("10.1234/56789", "t", ["a"], "a", ["10.1234/5678"])
+                details=PaperDetails(
+                    "10.1234/56789",
+                    "t",
+                    ["a"],
+                    "a",
+                    "venue",
+                    ["10.1234/5678"],
+                    ["10.1234/5678"],
+                    "https://example.org",
+                )
             )
         )
     )
@@ -166,12 +221,30 @@ async def test_get_one_returns_unique_authors(http_client):
         PaperMetadataClient(http_client)
         .use_custom_provider(
             StubProvider(
-                details=PaperDetails("10.1234/5678", "t", ["a"], "a2", ["10.1234/5678"])
+                details=PaperDetails(
+                    "10.1234/5678",
+                    "t",
+                    ["a"],
+                    "a2",
+                    "venue",
+                    ["10.1234/5678"],
+                    ["10.1234/5678"],
+                    "https://example.org",
+                )
             )
         )
         .use_custom_provider(
             StubProvider(
-                details=PaperDetails("10.1234/56789", "t", ["a"], "a", ["10.1234/5678"])
+                details=PaperDetails(
+                    "10.1234/56789",
+                    "t",
+                    ["a"],
+                    "a",
+                    "venue",
+                    ["10.1234/5678"],
+                    ["10.1234/5678"],
+                    "https://example.org",
+                )
             )
         )
     )
@@ -186,12 +259,30 @@ async def test_get_one_returns_unique_refs(http_client):
         PaperMetadataClient(http_client)
         .use_custom_provider(
             StubProvider(
-                details=PaperDetails("10.1234/5678", "t", ["a"], "a2", ["10.1234/5678"])
+                details=PaperDetails(
+                    "10.1234/5678",
+                    "t",
+                    ["a"],
+                    "a2",
+                    "venue",
+                    ["10.1234/5678"],
+                    ["10.1234/5678"],
+                    "https://example.org",
+                )
             )
         )
         .use_custom_provider(
             StubProvider(
-                details=PaperDetails("10.1234/56789", "t", ["a"], "a", ["10.1234/5678"])
+                details=PaperDetails(
+                    "10.1234/56789",
+                    "t",
+                    ["a"],
+                    "a",
+                    "venue",
+                    ["10.1234/5678"],
+                    ["10.1234/5678"],
+                    "https://example.org",
+                )
             )
         )
     )
@@ -207,7 +298,16 @@ async def test_get_one_returns_data_from_successful_provider(http_client):
         .use_custom_provider(StubProvider(details=Exception("test error")))
         .use_custom_provider(
             StubProvider(
-                details=PaperDetails("10.1234/56789", "t", ["a"], "a", ["10.1234/5678"])
+                details=PaperDetails(
+                    "10.1234/56789",
+                    "t",
+                    ["a"],
+                    "a",
+                    "venue",
+                    ["10.1234/5678"],
+                    ["10.1234/5678"],
+                    "https://example.org",
+                )
             )
         )
     )

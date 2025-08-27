@@ -14,16 +14,24 @@ def oc_refs_response():
 
 
 @pytest.fixture
+def oc_citations_response():
+    return Response(200, json=[{"citing": "doi:10.1234/5678"}])
+
+
+@pytest.fixture
 def oc_metadata_response():
     return Response(200, json=[{"title": "abc def", "authors": "name surname"}])
 
 
 @pytest.fixture
-def request_handler_side_effect(oc_refs_response, oc_metadata_response):
+def request_handler_side_effect(
+    oc_citations_response, oc_refs_response, oc_metadata_response
+):
     def __handler(request):
         req_url = str(request.url)
         responses = {
             "https://opencitations.net/index/api/v2/references/doi:10.1234/5678": oc_refs_response,
+            "https://opencitations.net/index/api/v2/citations/doi:10.1234/5678": oc_citations_response,
             "https://w3id.org/oc/meta/api/v1/metadata/doi:10.1234/5678": oc_metadata_response,
         }
         return responses[req_url]
@@ -70,13 +78,18 @@ async def test_details_makes_expected_call_to_references_api(
 ):
     await sut.get_one(doi)
 
-    assert len(request_handler.call_args_list) == 2
+    assert len(request_handler.call_args_list) == 3
     refs_request = request_handler.call_args_list[0].args[0]
     assert refs_request.method == "GET"
     assert refs_request.url.path == "/index/api/v2/references/doi:10.1234/5678"
     assert refs_request.headers.get("Authorization") == expected_auth
 
-    meta_request = request_handler.call_args_list[1].args[0]
+    refs_request = request_handler.call_args_list[1].args[0]
+    assert refs_request.method == "GET"
+    assert refs_request.url.path == "/index/api/v2/citations/doi:10.1234/5678"
+    assert refs_request.headers.get("Authorization") == expected_auth
+
+    meta_request = request_handler.call_args_list[2].args[0]
     assert (
         str(meta_request.url)
         == "https://w3id.org/oc/meta/api/v1/metadata/doi:10.1234/5678"
@@ -116,7 +129,7 @@ async def test_details_raise_error_on_metadata_endpoint_error(
 
     assert err_wrapper.value is not None
     assert str(status_code) in str(err_wrapper.value)
-    assert len(request_handler.call_args_list) == 2
+    assert len(request_handler.call_args_list) == 3
 
 
 @pytest.mark.asyncio
