@@ -102,22 +102,30 @@ class PaperMetadataClient:
         doi = self.__longest_str(paper_data, lambda x: x.doi)
         title = self.__longest_str(paper_data, lambda x: x.title)
         abstract = self.__longest_str(paper_data, lambda x: x.abstract)
-        unique_references = set(
-            itertools.chain.from_iterable(x.references for x in paper_data)
+        unique_citations = list(
+            sorted(set(itertools.chain.from_iterable(x.citations for x in paper_data)))
+        )
+        unique_references = list(
+            sorted(set(itertools.chain.from_iterable(x.references for x in paper_data)))
         )
         unique_author_names = set(
             a for a in itertools.chain.from_iterable(d.authors for d in paper_data)
         )
         has_pdf = any(d.has_pdf for d in paper_data)
         pdf_url = self.__longest_str(paper_data, lambda x: x.pdf_url)
+        url = self.__longest_str(paper_data, lambda x: x.url)
+        source = self.__longest_str(paper_data, lambda x: x.source)
         return PaperDetails(
             doi=doi,
             title=title,
             abstract=abstract,
+            source=source,
+            citations=unique_citations,
             references=list(unique_references),
             authors=list(unique_author_names),
             has_pdf=has_pdf,
             pdf_url=pdf_url,
+            url=url,
         )
 
     @staticmethod

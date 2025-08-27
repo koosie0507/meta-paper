@@ -3,6 +3,7 @@ from datetime import timedelta
 from collections.abc import Iterable
 from http import HTTPStatus
 from logging import Logger
+from typing import Literal
 
 import httpx
 from tenacity import (
@@ -21,7 +22,7 @@ from meta_paper.search import QueryParameters
 class SemanticScholarAdapter(DOIPrefixMixin, PaperMetadataAdapter):
     __BASE_URL = "https://api.semanticscholar.org/graph/v1"
     __DETAIL_FIELDS = {
-        "fields": "externalIds,title,authors,references.externalIds,abstract,isOpenAccess,openAccessPdf"
+        "fields": "externalIds,title,authors,publicationVenue,citations.externalIds,references.externalIds,abstract,isOpenAccess,openAccessPdf,url"
     }
     __RETRY_MESSAGES = {
         int(HTTPStatus.TOO_MANY_REQUESTS): "rate limited",
@@ -99,15 +100,22 @@ class SemanticScholarAdapter(DOIPrefixMixin, PaperMetadataAdapter):
                     raise ValueError("paper authors missing")
                 if not (abstract := paper_data.get("abstract")):
                     abstract = ""
+                if not (source := self.__get_publication_venue(paper_data)):
+                    source = ""
+                if not (url := paper_data.get("url")):
+                    url = ""
 
         return PaperDetails(
             doi=self.__get_doi(paper_data.get("externalIds")),
             title=title,
             authors=authors,
             abstract=abstract,
-            references=self.__get_references(paper_data),
+            citations=self.__get_related_papers(paper_data, "citations"),
+            references=self.__get_related_papers(paper_data),
             has_pdf=paper_data.get("isOpenAccess") or False,
             pdf_url=self.__get_pdf_url(paper_data),
+            url=url,
+            source=source,
         )
 
     async def get_many(self, identifiers: Iterable[str]) -> Iterable[PaperDetails]:
@@ -143,6 +151,10 @@ class SemanticScholarAdapter(DOIPrefixMixin, PaperMetadataAdapter):
                         continue
                     if not (abstract := paper_data.get("abstract")):
                         abstract = ""
+                    if not (source := self.__get_publication_venue(paper_data)):
+                        source = ""
+                    if not (url := paper_data.get("url")):
+                        url = ""
                     doi = self.__get_doi(paper_data.get("externalIds"))
 
                     result.append(
@@ -151,9 +163,14 @@ class SemanticScholarAdapter(DOIPrefixMixin, PaperMetadataAdapter):
                             title=title,
                             authors=authors,
                             abstract=abstract,
-                            references=self.__get_references(paper_data),
+                            citations=self.__get_related_papers(
+                                paper_data, "citations"
+                            ),
+                            references=self.__get_related_papers(paper_data),
                             has_pdf=paper_data.get("isOpenAccess") or False,
                             pdf_url=self.__get_pdf_url(paper_data),
+                            source=source,
+                            url=url,
                         )
                     )
         return result
@@ -182,6 +199,13 @@ class SemanticScholarAdapter(DOIPrefixMixin, PaperMetadataAdapter):
         return list(map(str, authors))
 
     @staticmethod
+    def __get_publication_venue(paper_data: dict) -> str:
+        if paper_data is None:
+            return ""
+        venue_info = paper_data.get("publicationVenue") or {}
+        return venue_info.get("name") or ""
+
+    @staticmethod
     def __get_pdf_url(paper_data: dict) -> str:
         if paper_data is None:
             return ""
@@ -196,10 +220,14 @@ class SemanticScholarAdapter(DOIPrefixMixin, PaperMetadataAdapter):
             return ""
         return self._prepend_doi(doi)
 
-    def __get_references(self, paper_data: dict) -> list[str]:
+    def __get_related_papers(
+        self,
+        paper_data: dict,
+        relation_type: Literal["citations", "references"] = "references",
+    ) -> list[str]:
         if paper_data is None:
             return []
-        ref_objs = list(filter(bool, paper_data.get("references") or []))
+        ref_objs = list(filter(bool, paper_data.get(relation_type) or []))
         external_id_objs = list(
             filter(bool, map(lambda x: x.get("externalIds"), ref_objs))
         )

@@ -1,5 +1,5 @@
 import re
-from typing import Iterable
+from typing import Iterable, Literal
 
 import httpx
 from tenacity import (
@@ -40,6 +40,20 @@ class OpenCitationsAdapter(DOIPrefixMixin, PaperMetadataAdapter):
     async def search(self, _: QueryParameters) -> list[PaperListing]:
         return []
 
+    async def __get_related(
+        self, doi: str, relation_type: Literal["references", "citations"]
+    ):
+        endpoint_url = f"{self.REFERENCES_REST_API}/{relation_type}/{doi}"
+        response = await self.__http.get(endpoint_url, headers=self.__headers)
+        response.raise_for_status()
+
+        citation_attr = "cited" if relation_type == "references" else "citing"
+        return [
+            self.DOI_RE.search(ref[citation_attr]).group(1)
+            for ref in response.json()
+            if self.DOI_RE.search(ref[citation_attr])
+        ]
+
     @retry(
         retry=retry_if_exception(_retry_open_citations),
         wait=wait_exponential_jitter(max=10),
@@ -50,16 +64,9 @@ class OpenCitationsAdapter(DOIPrefixMixin, PaperMetadataAdapter):
         doi = self._prepend_doi(doi, False)
         if not self.DOI_RE.match(doi):
             raise ValueError(f"{doi} is not a valid DOI")
-        response = await self.__http.get(
-            f"{self.REFERENCES_REST_API}/references/{doi}", headers=self.__headers
-        )
-        response.raise_for_status()
 
-        refs = [
-            self.DOI_RE.search(ref["cited"]).group(1)
-            for ref in response.json()
-            if self.DOI_RE.search(ref["cited"])
-        ]
+        refs = await self.__get_related(doi, "references")
+        citations = await self.__get_related(doi, "citations")
 
         response = await self.__http.get(
             f"{self.META_REST_API}/metadata/{doi}", headers=self.__headers
@@ -73,6 +80,9 @@ class OpenCitationsAdapter(DOIPrefixMixin, PaperMetadataAdapter):
             authors=metadata.get("authors", "").split(";"),
             abstract="",
             references=refs,
+            citations=citations,
+            source=metadata.get("venue", ""),
+            url=f"https://dx.doi.org/{doi}",
         )
 
     async def get_many(self, identifiers: Iterable[str]) -> Iterable[PaperDetails]:
