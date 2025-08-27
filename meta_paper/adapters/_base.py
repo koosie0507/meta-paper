@@ -24,6 +24,7 @@ class PaperDetails:
     citations: list[str]
     references: list[str]
     url: str
+    year: int
     has_pdf: bool = False
     pdf_url: str | None = None
 

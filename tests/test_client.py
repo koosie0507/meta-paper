@@ -116,6 +116,7 @@ async def test_get_one_returns_longest_doi(http_client):
                     ["10.1234/5678"],
                     ["10.1234/5678"],
                     "https://example.org",
+                    2025,
                 )
             )
         )
@@ -130,6 +131,7 @@ async def test_get_one_returns_longest_doi(http_client):
                     ["10.1234/5678"],
                     ["10.1234/5678"],
                     "https://example.org",
+                    2025,
                 )
             )
         )
@@ -154,6 +156,7 @@ async def test_get_one_returns_longest_title(http_client):
                     ["10.1234/5678"],
                     ["10.1234/5678"],
                     "https://example.org",
+                    2025,
                 )
             )
         )
@@ -168,6 +171,7 @@ async def test_get_one_returns_longest_title(http_client):
                     ["10.1234/5678"],
                     ["10.1234/5678"],
                     "https://example.org",
+                    2025,
                 )
             )
         )
@@ -192,6 +196,7 @@ async def test_get_one_returns_longest_abstract(http_client):
                     ["10.1234/5678"],
                     ["10.1234/5678"],
                     "https://example.org",
+                    2025,
                 )
             )
         )
@@ -206,6 +211,7 @@ async def test_get_one_returns_longest_abstract(http_client):
                     ["10.1234/5678"],
                     ["10.1234/5678"],
                     "https://example.org",
+                    2025,
                 )
             )
         )
@@ -230,6 +236,7 @@ async def test_get_one_returns_unique_authors(http_client):
                     ["10.1234/5678"],
                     ["10.1234/5678"],
                     "https://example.org",
+                    2025,
                 )
             )
         )
@@ -244,6 +251,7 @@ async def test_get_one_returns_unique_authors(http_client):
                     ["10.1234/5678"],
                     ["10.1234/5678"],
                     "https://example.org",
+                    2025,
                 )
             )
         )
@@ -268,6 +276,7 @@ async def test_get_one_returns_unique_refs(http_client):
                     ["10.1234/5678"],
                     ["10.1234/5678"],
                     "https://example.org",
+                    2025,
                 )
             )
         )
@@ -282,6 +291,7 @@ async def test_get_one_returns_unique_refs(http_client):
                     ["10.1234/5678"],
                     ["10.1234/5678"],
                     "https://example.org",
+                    2025,
                 )
             )
         )
@@ -307,6 +317,7 @@ async def test_get_one_returns_data_from_successful_provider(http_client):
                     ["10.1234/5678"],
                     ["10.1234/5678"],
                     "https://example.org",
+                    2025,
                 )
             )
         )

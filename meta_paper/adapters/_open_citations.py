@@ -73,6 +73,12 @@ class OpenCitationsAdapter(DOIPrefixMixin, PaperMetadataAdapter):
         )
         response.raise_for_status()
         metadata = next(iter(response.json()))
+        pub_date_parts = metadata.get("pub_date", "").split("-")
+        year = (
+            int(pub_date_parts[0])
+            if len(pub_date_parts) > 0 and pub_date_parts[0]
+            else 0
+        )
 
         return PaperDetails(
             doi=doi,
@@ -83,6 +89,7 @@ class OpenCitationsAdapter(DOIPrefixMixin, PaperMetadataAdapter):
             citations=citations,
             source=metadata.get("venue", ""),
             url=f"https://dx.doi.org/{doi}",
+            year=year,
         )
 
     async def get_many(self, identifiers: Iterable[str]) -> Iterable[PaperDetails]:

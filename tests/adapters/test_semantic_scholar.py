@@ -10,7 +10,7 @@ from meta_paper.adapters._semantic_scholar import SemanticScholarAdapter
 from meta_paper.search import QueryParameters
 
 
-EXPECTED_PAPER_DETAIL_FIELDS = "externalIds,title,authors,publicationVenue,citations.externalIds,references.externalIds,abstract,isOpenAccess,openAccessPdf,url"
+EXPECTED_PAPER_DETAIL_FIELDS = "externalIds,title,authors,publicationVenue,citations.externalIds,references.externalIds,abstract,isOpenAccess,openAccessPdf,url,year"
 
 
 def new_detail(remove=None, **kwargs):
