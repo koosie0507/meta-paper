@@ -22,7 +22,7 @@ from meta_paper.search import QueryParameters
 class SemanticScholarAdapter(DOIPrefixMixin, PaperMetadataAdapter):
     __BASE_URL = "https://api.semanticscholar.org/graph/v1"
     __DETAIL_FIELDS = {
-        "fields": "externalIds,title,authors,publicationVenue,citations.externalIds,references.externalIds,abstract,isOpenAccess,openAccessPdf,url,year"
+        "fields": "externalIds,title,authors,publicationVenue,referenceCount,citationCount,citations.externalIds,references.externalIds,abstract,isOpenAccess,openAccessPdf,url,year"
     }
     __RETRY_MESSAGES = {
         int(HTTPStatus.TOO_MANY_REQUESTS): "rate limited",
@@ -110,7 +110,9 @@ class SemanticScholarAdapter(DOIPrefixMixin, PaperMetadataAdapter):
             title=title,
             authors=authors,
             abstract=abstract,
+            citation_count=paper_data.get("citationCount", 0),
             citations=self.__get_related_papers(paper_data, "citations"),
+            reference_count=paper_data.get("referenceCount", 0),
             references=self.__get_related_papers(paper_data),
             has_pdf=paper_data.get("isOpenAccess") or False,
             pdf_url=self.__get_pdf_url(paper_data),
@@ -166,9 +168,11 @@ class SemanticScholarAdapter(DOIPrefixMixin, PaperMetadataAdapter):
                             title=title,
                             authors=authors,
                             abstract=abstract,
+                            citation_count=paper_data.get("citationCount", 0),
                             citations=self.__get_related_papers(
                                 paper_data, "citations"
                             ),
+                            reference_count=paper_data.get("referenceCount", 0),
                             references=self.__get_related_papers(paper_data),
                             has_pdf=paper_data.get("isOpenAccess") or False,
                             pdf_url=self.__get_pdf_url(paper_data),

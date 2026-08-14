@@ -21,7 +21,9 @@ class PaperDetails:
     authors: list[str]
     abstract: str
     source: str
+    citation_count: int
     citations: list[str]
+    reference_count: int
     references: list[str]
     url: str
     year: int
