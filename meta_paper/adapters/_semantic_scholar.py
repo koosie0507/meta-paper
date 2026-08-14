@@ -285,13 +285,15 @@ class SemanticScholarAdapter(DOIPrefixMixin, PaperMetadataAdapter):
                             params=page_params,
                         )
                         response.raise_for_status()
-                        json = response.json()
-                        if not json:
-                            continue
+                        if json := response.json():
+                            data = json.get("data") or []
+                        else:
+                            data = []
                         related_papers.extend(
                             [
-                                item.get(related_paper_field, {})
-                                for item in json.get("data", [])
+                                item[related_paper_field]
+                                for item in data
+                                if item is not None and related_paper_field in item
                             ]
                         )
                         self.__logger.info(json.get("next"))
