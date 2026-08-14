@@ -11,6 +11,7 @@ from tenacity import (
     wait_exponential_jitter,
     retry_if_exception,
     AsyncRetrying,
+    sleep,
 )
 
 from meta_paper.adapters._base import PaperListing, PaperDetails, PaperMetadataAdapter
@@ -191,7 +192,7 @@ class SemanticScholarAdapter(DOIPrefixMixin, PaperMetadataAdapter):
         return AsyncRetrying(
             retry=retry_if_exception(self._retry_semantic_scholar),
             stop=stop_after_delay(timedelta(seconds=60)),
-            wait=wait_exponential_jitter(3, 27, 3, 1.5),
+            wait=wait_exponential_jitter(3, 81, 3, 1.5),
         )
 
     @staticmethod
@@ -296,7 +297,7 @@ class SemanticScholarAdapter(DOIPrefixMixin, PaperMetadataAdapter):
                                 if item is not None and related_paper_field in item
                             ]
                         )
-                        self.__logger.info(json.get("next"))
+                        sleep(1)
         except httpx.HTTPError as e:
             msg = e.response.text if hasattr(e, "response") else str(e)
             self.__logger.warning(
