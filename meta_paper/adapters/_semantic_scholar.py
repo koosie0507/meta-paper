@@ -28,6 +28,10 @@ class SemanticScholarAdapter(DOIPrefixMixin, PaperMetadataAdapter):
         int(HTTPStatus.TOO_MANY_REQUESTS): "rate limited",
         int(HTTPStatus.GATEWAY_TIMEOUT): "gateway timeout",
     }
+    __BATCH_SIZE = 500
+    __MAX_RELATED = (
+        9999  # undocumented limitation of the citations and references endpoints
+    )
 
     def __init__(
         self,
@@ -111,9 +115,9 @@ class SemanticScholarAdapter(DOIPrefixMixin, PaperMetadataAdapter):
             authors=authors,
             abstract=abstract,
             citation_count=paper_data.get("citationCount", 0),
-            citations=self.__get_related_papers(paper_data, "citations"),
+            citations=await self.__get_related_papers(paper_data, "citations"),
             reference_count=paper_data.get("referenceCount", 0),
-            references=self.__get_related_papers(paper_data),
+            references=await self.__get_related_papers(paper_data),
             has_pdf=paper_data.get("isOpenAccess") or False,
             pdf_url=self.__get_pdf_url(paper_data),
             url=url,
@@ -169,11 +173,11 @@ class SemanticScholarAdapter(DOIPrefixMixin, PaperMetadataAdapter):
                             authors=authors,
                             abstract=abstract,
                             citation_count=paper_data.get("citationCount", 0),
-                            citations=self.__get_related_papers(
+                            citations=await self.__get_related_papers(
                                 paper_data, "citations"
                             ),
                             reference_count=paper_data.get("referenceCount", 0),
-                            references=self.__get_related_papers(paper_data),
+                            references=await self.__get_related_papers(paper_data),
                             has_pdf=paper_data.get("isOpenAccess") or False,
                             pdf_url=self.__get_pdf_url(paper_data),
                             source=source,
@@ -235,14 +239,98 @@ class SemanticScholarAdapter(DOIPrefixMixin, PaperMetadataAdapter):
             return ""
         return self._prepend_doi(doi)
 
-    def __get_related_papers(
+    @staticmethod
+    def __get_related_paper_count(
+        paper_data: dict, relation_type: Literal["citations", "references"]
+    ) -> int:
+        match relation_type:
+            case "citations":
+                return paper_data.get("citationCount", 0)
+            case "references":
+                return paper_data.get("referenceCount", 0)
+
+    async def __fetch_related_papers(
+        self,
+        paper_data: dict,
+        related_paper_count: int,
+        relation_type: Literal["citations", "references"] = "references",
+    ):
+        paper_data_doi = paper_data.get("externalIds", {}).get("DOI")
+        canonical_doi = self._prepend_doi(paper_data_doi)
+        related_url = f"{self.__BASE_URL}/paper/{canonical_doi}/{relation_type}"
+        related_paper_field = (
+            "citedPaper" if relation_type == "references" else "citingPaper"
+        )
+        related_papers = []
+        try:
+            for offset in range(0, related_paper_count, self.__BATCH_SIZE):
+                limit = min(related_paper_count - offset, self.__BATCH_SIZE)
+                self.__logger.info(
+                    "fetching %s %s %d-%d",
+                    paper_data_doi,
+                    relation_type,
+                    offset,
+                    offset + limit,
+                )
+                page_params = dict(
+                    offset=offset,
+                    limit=limit,
+                    fields=f"{related_paper_field}.externalIds",
+                )
+                async for attempt in self.__new_retry_manager():
+                    with attempt:
+                        response = await self.__http.get(
+                            related_url,
+                            headers=self.__request_headers,
+                            params=page_params,
+                        )
+                        response.raise_for_status()
+                        json = response.json()
+                        related_papers.extend(
+                            [
+                                item.get(related_paper_field, {})
+                                for item in json.get("data", [])
+                            ]
+                        )
+                        self.__logger.info(json.get("next"))
+        except httpx.HTTPError as e:
+            msg = e.response.text if hasattr(e, "response") else str(e)
+            self.__logger.warning(
+                "fetch %s %s caught error: %s", paper_data_doi, relation_type, msg
+            )
+        self.__logger.info(
+            "fetched %d %s for %s", len(related_papers), relation_type, paper_data_doi
+        )
+        return related_papers
+
+    async def __get_related_papers(
         self,
         paper_data: dict,
         relation_type: Literal["citations", "references"] = "references",
     ) -> list[str]:
         if paper_data is None:
             return []
-        ref_objs = list(filter(bool, paper_data.get(relation_type) or []))
+        # can't get more than __MAX_RELATED citations/references via ANY graph API endpoint
+        count = min(
+            self.__get_related_paper_count(paper_data, relation_type),
+            self.__MAX_RELATED,
+        )
+        related = paper_data.get(relation_type) or []
+        if count > len(related):
+            # Semantic Scholar truncated the references/citations
+            self.__logger.info(
+                "initial fetch got %d out of %d %s. refetching",
+                len(related),
+                count,
+                relation_type,
+            )
+            related_papers = await self.__fetch_related_papers(
+                paper_data, count, relation_type
+            )
+            ref_objs = list(filter(bool, related_papers))
+        else:
+            ref_objs = list(filter(bool, related))
+
         external_id_objs = list(
             filter(bool, map(lambda x: x.get("externalIds"), ref_objs))
         )
@@ -250,7 +338,7 @@ class SemanticScholarAdapter(DOIPrefixMixin, PaperMetadataAdapter):
 
     @staticmethod
     def __batch(
-        identifiers: Iterable[str], batch_size: int = 500
+        identifiers: Iterable[str], batch_size: int = __BATCH_SIZE
     ) -> Iterable[list[str]]:
         it = iter(identifiers)
         while True:
