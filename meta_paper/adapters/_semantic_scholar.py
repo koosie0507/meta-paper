@@ -286,6 +286,8 @@ class SemanticScholarAdapter(DOIPrefixMixin, PaperMetadataAdapter):
                         )
                         response.raise_for_status()
                         json = response.json()
+                        if not json:
+                            continue
                         related_papers.extend(
                             [
                                 item.get(related_paper_field, {})
