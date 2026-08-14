@@ -41,5 +41,7 @@ class PaperMetadataAdapter(Protocol):
     async def get_one(self, doi: str) -> PaperDetails:
         pass
 
-    async def get_many(self, identifiers: Iterable[str]) -> Iterable[PaperDetails]:
+    async def get_many(
+        self, identifiers: Iterable[str], refetch_missing: bool = False
+    ) -> Iterable[PaperDetails]:
         pass

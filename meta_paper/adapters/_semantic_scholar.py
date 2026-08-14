@@ -126,7 +126,9 @@ class SemanticScholarAdapter(DOIPrefixMixin, PaperMetadataAdapter):
             year=self.__get_year(paper_data),
         )
 
-    async def get_many(self, identifiers: Iterable[str]) -> Iterable[PaperDetails]:
+    async def get_many(
+        self, identifiers: Iterable[str], refetch_missing: bool = False
+    ) -> Iterable[PaperDetails]:
         if identifiers:
             identifiers = list(map(self._prepend_doi, filter(bool, identifiers)))
         if not identifiers:
@@ -134,10 +136,14 @@ class SemanticScholarAdapter(DOIPrefixMixin, PaperMetadataAdapter):
 
         result = []
         for batch in self.__batch(identifiers):
-            result.extend(await self.__process_identifier_batch(batch))
+            result.extend(
+                await self.__process_identifier_batch(batch, refetch=refetch_missing)
+            )
         return result
 
-    async def __process_identifier_batch(self, batch: list[str]) -> list[PaperDetails]:
+    async def __process_identifier_batch(
+        self, batch: list[str], refetch: bool = False
+    ) -> list[PaperDetails]:
         result = []
         async for attempt in self.__new_retry_manager():
             with attempt:
@@ -175,10 +181,12 @@ class SemanticScholarAdapter(DOIPrefixMixin, PaperMetadataAdapter):
                             abstract=abstract,
                             citation_count=paper_data.get("citationCount", 0),
                             citations=await self.__get_related_papers(
-                                paper_data, "citations"
+                                paper_data, "citations", refetch
                             ),
                             reference_count=paper_data.get("referenceCount", 0),
-                            references=await self.__get_related_papers(paper_data),
+                            references=await self.__get_related_papers(
+                                paper_data, refetch=refetch
+                            ),
                             has_pdf=paper_data.get("isOpenAccess") or False,
                             pdf_url=self.__get_pdf_url(paper_data),
                             source=source,
@@ -312,6 +320,7 @@ class SemanticScholarAdapter(DOIPrefixMixin, PaperMetadataAdapter):
         self,
         paper_data: dict,
         relation_type: Literal["citations", "references"] = "references",
+        refetch: bool = False,
     ) -> list[str]:
         if paper_data is None:
             return []
@@ -321,7 +330,7 @@ class SemanticScholarAdapter(DOIPrefixMixin, PaperMetadataAdapter):
             self.__MAX_RELATED,
         )
         related = paper_data.get(relation_type) or []
-        if count > len(related):
+        if count > len(related) and refetch:
             # Semantic Scholar truncated the references/citations
             self.__logger.info(
                 "initial fetch got %d out of %d %s. refetching",

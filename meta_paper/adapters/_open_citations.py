@@ -94,5 +94,7 @@ class OpenCitationsAdapter(DOIPrefixMixin, PaperMetadataAdapter):
             year=year,
         )
 
-    async def get_many(self, identifiers: Iterable[str]) -> Iterable[PaperDetails]:
+    async def get_many(
+        self, identifiers: Iterable[str], refetch_missing: bool = False
+    ) -> Iterable[PaperDetails]:
         return []
